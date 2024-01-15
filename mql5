@@ -1,0 +1,150 @@
+
+//+------------------------------------------------------------------+
+//|                                           Sup 9 Scalper.mq5      |
+//|                                  Copyright 2022, Forex Robot Easy Team|
+//|                                           https://forexroboteasy.com|
+//+------------------------------------------------------------------+
+
+// Include necessary libraries
+#include <Python.mqh>
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Initialize Python environment
+   if(!PythonEnvInitialize())
+   {
+      Print('Error initializing Python environment!');
+      return INIT_FAILED;
+   }
+   
+   // Load InrexEA DB module
+   if(!PythonModuleLoad('InrexEA_DB'))
+   {
+      Print('Error loading InrexEA DB module!');
+      return INIT_FAILED;
+   }
+   
+   // Connect to XAUUSD market
+   if(!PythonFunctionCall('InrexEA_DB.connect', 'XAUUSD'))
+   {
+      Print('Error connecting to XAUUSD market!');
+      return INIT_FAILED;
+   }
+   
+   // Enable tick calculator
+   if(!PythonFunctionCall('InrexEA_DB.enableTickCalculator'))
+   {
+      Print('Error enabling tick calculator!');
+      return INIT_FAILED;
+   }
+   
+   // Set trade execution limit
+   if(!PythonFunctionCall('InrexEA_DB.setTradeExecutionLimit', 150, 500))
+   {
+      Print('Error setting trade execution limit!');
+      return INIT_FAILED;
+   }
+   
+   // Initialize machine learning algorithms
+   if(!PythonFunctionCall('InrexEA_DB.initMachineLearning'))
+   {
+      Print('Error initializing machine learning algorithms!');
+      return INIT_FAILED;
+   }
+   
+   return INIT_SUCCEEDED;
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   // Disconnect from XAUUSD market
+   PythonFunctionCall('InrexEA_DB.disconnectMarket', 'XAUUSD');
+   
+   // Deinitialize Python environment
+   PythonEnvDeinitialize();
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // Get latest tick data
+   MqlTick tick;
+   SymbolInfoTick(Symbol(), tick);
+   
+   // Update tick data in InrexEA DB
+   PythonFunctionCall('InrexEA_DB.updateTickData', Symbol(), tick.bid, tick.ask);
+   
+   // Analyze and learn from market trends
+   PythonFunctionCall('InrexEA_DB.analyzeMarketTrends');
+   
+   // Place trades based on analysis
+   PythonFunctionCall('InrexEA_DB.placeTrades');
+}
+
+//+------------------------------------------------------------------+
+//| Custom functions for InrexEA DB module                            |
+//+------------------------------------------------------------------+
+bool PythonEnvInitialize()
+{
+   // Initialize Python environment
+   PyObject* pModule = PyImport_ImportModule('InrexEA_DB');
+   if(pModule == NULL)
+      return false;
+   
+   // Initialize InrexEA DB module
+   PyObject* pFunc = PyObject_GetAttrString(pModule, 'initialize');
+   if(pFunc == NULL)
+      return false;
+   
+   PyObject_CallObject(pFunc, NULL);
+   Py_DECREF(pFunc);
+   Py_DECREF(pModule);
+   
+   return true;
+}
+
+bool PythonModuleLoad(const string moduleName)
+{
+   // Load Python module
+   PyObject* pModuleName = PyUnicode_FromString(moduleName);
+   PyObject* pModule = PyImport_Import(pModuleName);
+   
+   Py_DECREF(pModuleName);
+   
+   if(pModule == NULL)
+      return false;
+   
+   Py_DECREF(pModule);
+   
+   return true;
+}
+
+bool PythonFunctionCall(const string functionName, const string arguments = '')
+{
+   // Call Python function with arguments
+   PyObject* pFunc = PyObject_GetAttrString(pModule, functionName);
+   if(pFunc == NULL)
+      return false;
+   
+   PyObject* pArgs = Py_BuildValue('(s)', arguments);
+   PyObject_CallObject(pFunc, pArgs);
+   
+   Py_DECREF(pArgs);
+   Py_DECREF(pFunc);
+   
+   return true;
+}
+
+void PythonEnvDeinitialize()
+{
+   // Deinitialize Python environment
+   Py_Finalize();
+}
